@@ -1,3 +1,40 @@
-field = { (ASCII_DIGIT | "." | "-")+ }
-record = { field ~ ("," ~ field)* }
-file = { SOI ~ (record ~ ("\r\n" | "\n"))* ~ EOI }
+//! DCM grammar
+WHITESPACE = _{ " " }
+
+// https://github.com/pest-parser/pest/blob/master/meta/src/grammar.pest
+/// A string.
+string = ${ quote ~ inner_str ~ quote }
+
+/// A quoted string.
+inner_str = @{ (!("\"" | "\\") ~ ANY)* ~ (escape ~ inner_str)? }
+
+/// An escape sequence.
+escape = @{ "\\" ~ ("\"" | "\\" | "r" | "n" | "t" | "0" | "'" | code | unicode) }
+
+/// A hexadecimal code.
+code = @{ "x" ~ hex_digit{2} }
+
+/// A unicode code.
+unicode = @{ "u" ~ opening_brace ~ hex_digit{2, 6} ~ closing_brace }
+
+/// A hexadecimal digit.
+hex_digit = @{ '0'..'9' | 'a'..'f' | 'A'..'F' }
+
+/// A double quote.
+quote = { "\"" }
+
+/// Opening brace for a rule.
+opening_brace = { "{" }
+
+/// Closing brace for a rule.
+closing_brace = { "}" }
+
+// dcm elements
+asam_ident = {(ASCII_ALPHA)+ ~ (ASCII_ALPHANUMERIC | "_" | "." | "[" | "]")*}
+
+dcm_format_version = {(ASCII_DIGIT)* ~ ("." ~ ASCII_DIGIT)?}
+dcm_format_line = {"KONSERVIERUNG_FORMAT" ~ dcm_format_version}
+
+dcm_parameter = {"FESTWERT" ~ asam_ident}
+
+dcm = { SOI ~ dcm_format_line ~ EOI }
